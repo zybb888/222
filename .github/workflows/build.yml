@@ -45,6 +45,46 @@ jobs:
         sudo apt-get install -y --no-install-recommends git zip unzip python3-pip autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev libunwind-dev libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev libglew-dev x11proto-core-dev libx11-dev libxxf86vm-dev libgl1-mesa-dev python3-setuptools libfreetype6-dev libpng-dev libjpeg-dev fonts-noto-cjk wget curl ca-certificates
         sudo apt-get clean
 
+    - name: Pre-setup Android SDK, NDK and p4a (avoid buildozer download timeout)
+      run: |
+        set -e
+        BP="$HOME/.buildozer/android/platform"
+        mkdir -p "$BP/android-sdk/cmdline-tools"
+        mkdir -p "$BP/android-ndk"
+
+        echo "=== 1. Downloading SDK commandlinetools ==="
+        wget -q "https:commandlinetools-linux-11076708_latest.zip" -O sdk.zip
+        unzip -q sdk.zip -d /tmp/sdk-extract
+        mv /tmp/sdk-extract/cmdline-tools "$BP/android-sdk/cmdline-tools/latest"
+
+        echo "=== 2. Accepting SDK licenses ==="
+        yes | "$BP/android-sdk/cmdline-tools/latest/bin/sdkmanager" --sdk_root "$BP/android-sdk" --licenses
+
+        echo "=== 3. Installing platform-tools and Android 34 ==="
+        "$BP/android-sdk/cmdline-tools/latest/bin/sdkmanager" --sdk_root "$BP/android-sdk" "platform-tools" "platforms;android-34"
+
+        echo "=== 4. Downloading NDK r25c ==="
+        wget -q "https:android-ndk-r25c-linux.zip" -O ndk.zip
+        unzip -q ndk.zip -d "$BP/android-ndk"
+
+        echo "=== 5. Creating NDK symlink ==="
+        NDK_VER=$(ls "$BP/android-ndk/" | head -1)
+        ln -sf "$BP/android-ndk/$NDK_VER" "$BP/android-ndk-r25c"
+
+        echo "=== 6. Pre-cloning p4a ==="
+        cd "$BP"
+        git clone --depth 1 --branch master https://github.com/kivy/python-for-android.git
+
+        echo "=== 7. Installing p4a dependencies ==="
+        cd "$BP/python-for-android"
+        python -m pip install -q --user appdirs "colorama>=0.3.3" jinja2 "sh>=2,<3.0" meson ninja build toml packaging "setuptools" "wheel~=0.43.0"
+
+        echo "=== 8. Installing p4a ==="
+        pip install -e . --no-deps -q
+
+        echo "=== Pre-setup complete ==="
+        ls -la "$BP/"
+
     - name: Install Buildozer
       run: |
         python -m pip install --upgrade pip setuptools wheel
@@ -52,15 +92,8 @@ jobs:
         pip install buildozer==1.5.0
         buildozer --version
 
-    - name: Verify files
-      run: |
-        ls -la
-        cat buildozer.spec
-        head -20 main.py
-
     - name: Build APK
       run: |
-        buildozer android clean 2>/dev/null || true
         buildozer android debug
 
     - name: Verify APK
