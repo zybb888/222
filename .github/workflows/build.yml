@@ -5,12 +5,22 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  actions: read
+  checks: read
+
+env:
+  ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+  ANDROID_HOME: /usr/local/lib/android/sdk
+  JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
+  ANDROID_JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
+  CYTHON_LANGUAGE_LEVEL: "3"
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.java-home=$JAVA_HOME -Dorg.gradle.jvmargs=-Xmx2048m"
+
 jobs:
   build:
     runs-on: ubuntu-22.04
-    env:
-      JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
-      ANDROID_JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
 
     steps:
     - name: Checkout
@@ -32,21 +42,24 @@ jobs:
     - name: Install system dependencies
       run: |
         sudo apt-get update
-        # 核心修复：在模板的基础上，增加了 libunwind-dev 和 libtinfo5 等关键依赖
         sudo apt-get install -y --no-install-recommends git zip unzip python3-pip autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev libunwind-dev libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev libglew-dev x11proto-core-dev libx11-dev libxxf86vm-dev libgl1-mesa-dev python3-setuptools libfreetype6-dev libpng-dev libjpeg-dev fonts-noto-cjk wget curl ca-certificates
         sudo apt-get clean
 
     - name: Install Buildozer
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        # 核心修复：锁定关键工具的版本，确保环境一致性
         pip install --upgrade cython==0.29.36
         pip install buildozer==1.5.0
         buildozer --version
 
+    - name: Verify files
+      run: |
+        ls -la
+        cat buildozer.spec
+        head -20 main.py
+
     - name: Build APK
       run: |
-        # 核心修复：增加容错处理，避免因目录不存在导致的构建中断
         buildozer android clean 2>/dev/null || true
         buildozer android debug
 
