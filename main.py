@@ -1,8 +1,5 @@
-
-# main.py
 import threading
 import time
-import json
 import re
 import requests
 from kivy.app import App
@@ -13,7 +10,6 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.scrollview import ScrollView
 from kivy.clock import mainthread
 
-# --- 配置常量 ---
 CLAIM_API_URL = "https://act.vip.iqiyi.com/cloud-party-v2/seat/receive"
 ADD_WHITELIST_URL = "https://serv.vip.iqiyi.com/view-engine/op/whitelist/add"
 CODE_SUCCESS = "A00000"
@@ -28,38 +24,35 @@ class IqiyiClaimApp(App):
         self.running = False
         self.thread = None
 
-        # UI 布局
         self.layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
 
-        # 输入区域
-        self.input_scroll = ScrollView(size_hint_y=None, height=300)
-        self.input_box = BoxLayout(orientation='vertical', size_hint_y=None, height=300, spacing=5)
+        self.input_scroll = ScrollView(size_hint_y=None, height=320)
+        self.input_box = BoxLayout(orientation='vertical', size_hint_y=None, height=320, spacing=5)
         self.input_scroll.add_widget(self.input_box)
 
-        self.cookie_input = self.add_input("Cookie (P00001...)", multiline=True, height=100)
-        self.item_code_input = self.add_input("场次代码 (itemCode)", text="")
-        self.activity_code_input = self.add_input("活动代码 (activityCode)", text="a687d61142dbd753")
-        self.act_code_input = self.add_input("白名单代码 (actCode)", text="")
+        self.cookie_input = TextInput(hint_text="Cookie (P00001...)", multiline=True, size_hint_y=None, height=120)
+        self.item_code_input = TextInput(hint_text="场次代码 (itemCode)", multiline=False, size_hint_y=None, height=40)
+        self.activity_code_input = TextInput(hint_text="活动代码 (activityCode)", text="a687d61142dbd753", multiline=False, size_hint_y=None, height=40)
+        self.act_code_input = TextInput(hint_text="白名单代码 (actCode)", multiline=False, size_hint_y=None, height=40)
+        self.max_time_input = TextInput(hint_text="最大运行时间(秒)", text="120", multiline=False, size_hint_y=None, height=40)
 
         self.input_box.add_widget(self.cookie_input)
         self.input_box.add_widget(self.item_code_input)
         self.input_box.add_widget(self.activity_code_input)
         self.input_box.add_widget(self.act_code_input)
+        self.input_box.add_widget(self.max_time_input)
 
-        self.layout.add_widget(Label(text="参数设置:", size_hint_y=None, height=30, halign='left', text_size=(300, None)))
+        self.layout.add_widget(Label(text="参数设置:", size_hint_y=None, height=30))
         self.layout.add_widget(self.input_scroll)
 
-        # 按钮区域
         self.btn_layout = BoxLayout(size_hint_y=None, height=50, spacing=10)
-        self.start_btn = Button(text="立即开始", background_color=(0, 1, 0, 1), on_press=self.start_task)
-        self.stop_btn = Button(text="停止", background_color=(1, 0, 0, 1), on_press=self.stop_task, disabled=True)
+        self.start_btn = Button(text="立即开始", on_press=self.start_task)
+        self.stop_btn = Button(text="停止", on_press=self.stop_task, disabled=True)
         self.btn_layout.add_widget(self.start_btn)
         self.btn_layout.add_widget(self.stop_btn)
         self.layout.add_widget(self.btn_layout)
 
-        # 日志区域
-        self.log_label = Label(text="日志输出:", size_hint_y=None, height=30, halign='left', text_size=(300, None))
-        self.layout.add_widget(self.log_label)
+        self.layout.add_widget(Label(text="日志输出:", size_hint_y=None, height=30))
 
         self.log_scroll = ScrollView()
         self.log_output = Label(text="", size_hint_y=None, valign='top', halign='left', markup=True)
@@ -68,10 +61,6 @@ class IqiyiClaimApp(App):
         self.layout.add_widget(self.log_scroll)
 
         return self.layout
-
-    def add_input(self, hint, text="", multiline=False, height=40):
-        inp = TextInput(text=text, hint_text=hint, multiline=multiline, size_hint_y=None, height=height)
-        return inp
 
     def log(self, msg):
         print(msg)
@@ -86,6 +75,9 @@ class IqiyiClaimApp(App):
     def start_task(self, instance):
         if not self.cookie_input.text.strip():
             self.log("[错误] 请输入 Cookie")
+            return
+        if not self.item_code_input.text.strip():
+            self.log("[错误] 请输入场次代码")
             return
 
         self.running = True
@@ -108,6 +100,11 @@ class IqiyiClaimApp(App):
         activity_code = self.activity_code_input.text.strip()
         act_code = self.act_code_input.text.strip()
 
+        try:
+            max_duration = int(self.max_time_input.text.strip())
+        except Exception:
+            max_duration = 120
+
         def get_cookie_val(key):
             match = re.search(rf"{key}=([^;]+)", cookie)
             return match.group(1) if match else ""
@@ -120,6 +117,8 @@ class IqiyiClaimApp(App):
         if not all([p00001, device_id, dfp, fv]):
             self.log("[错误] Cookie 解析失败，缺少关键参数 (QC006, __dfp, QC142)")
             self.running = False
+            self.start_btn.disabled = False
+            self.stop_btn.disabled = True
             return
 
         headers = {
@@ -129,7 +128,6 @@ class IqiyiClaimApp(App):
             "Referer": "https://vip.iqiyi.com/"
         }
 
-        # 1. 报名
         signup_params = {
             "actCode": act_code or activity_code,
             "page": "30", "abt": "", "u": device_id, "deviceIdType": "1003",
@@ -144,17 +142,15 @@ class IqiyiClaimApp(App):
             if r.status_code == 200 and r.json().get("code") == CODE_SUCCESS:
                 self.log("[系统] 报名成功")
             else:
-                self.log(f"[系统] 报名可能失败或已报名: {r.text[:50]}")
+                self.log(f"[系统] 报名可能失败或已报名: {r.text[:80]}")
         except Exception as e:
             self.log(f"[系统] 报名请求异常: {e}")
 
-        # 2. 循环领取
         start_time = time.time()
-        max_duration = 120
 
         while self.running:
             if time.time() - start_time > max_duration:
-                self.log("[系统] 达到最大运行时间 (120s)，自动停止")
+                self.log(f"[系统] 达到最大运行时间 ({max_duration}s)，自动停止")
                 self.running = False
                 break
 
@@ -191,11 +187,11 @@ class IqiyiClaimApp(App):
             except Exception as e:
                 self.log(f"[错误] 请求异常: {e}")
 
-            # 间隔 0.5 - 1 秒随机延迟
-            time.sleep(0.5 + 0.5 * (hash(str(time.time())) % 100) / 100)
+            time.sleep(0.5 + (0.5 * (hash(str(time.time())) % 100) / 100))
 
         self.start_btn.disabled = False
         self.stop_btn.disabled = True
+        self.log("[状态] 任务已结束")
 
 
 if __name__ == '__main__':
