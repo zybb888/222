@@ -9,28 +9,28 @@ package.domain = org.iqiyi.claim
 # 源代码目录
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
-# 排除不必要的目录，减少编译负担
-source.exclude_dirs = tests, bin, venv, .buildozer, .git
+# 严格排除无关文件，减少打包体积和编译负担
+source.exclude_dirs = tests, bin, venv, .buildozer, .git, logs_85343046343, logs_85348553101
 
 # 版本号
 version = 0.1
 
-# 强制 Python 版本，避免使用不稳定的 3.14
+# 强制 Python 版本
 python_version = 3.11
 
-# 依赖项：只需列出核心，Buildozer 会处理 requests 的子依赖
-requirements = python3,kivy==2.2.1,requests,urllib3,certifi,idna,charset-normalizer
+# 依赖项：必须包含 openssl 才能支持 https 请求
+requirements = python3,kivy==2.2.1,requests,urllib3,certifi,idna,charset-normalizer,openssl
 
 # 屏幕方向
 orientation = portrait
 
-# 权限：增加网络状态检查权限
+# 权限
 android.permissions = INTERNET,ACCESS_NETWORK_STATE
 
-# Android API 级别 (33 为当前主流标准)
-android.api = 33
+# 编译环境设置
+android.api = 31
 android.minapi = 21
-android.sdk = 33
+android.sdk = 31
 android.ndk = 25b
 android.archs = arm64-v8a
 
