@@ -19,7 +19,10 @@ jobs:
         python-version: '3.11'
 
     - name: 安装系统依赖
-      run: |\n        sudo apt-get update\n        sudo apt-get install -y --no-install-recommends \\\n          git zip unzip openjdk-17-jdk python3-pip \\\n          autoconf automake libtool pkg-config \\\n          zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \\\n          cmake libffi-dev libssl-dev \\\n          libunwind-dev \\\n          libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good \\\n          libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \\\n          libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev \\\n          libglew-dev x11proto-core-dev libx11-dev libxxf86vm-dev \\\n          libgl1-mesa-dev python3-setuptools \\\n          libfreetype6-dev libpng-dev libjpeg-dev \\\n          fonts-noto-cjk wget curl ca-certificates\n        sudo apt-get clean
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends git zip unzip openjdk-17-jdk python3-pip autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev libunwind-dev libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev libglew-dev x11proto-core-dev libx11-dev libxxf86vm-dev libgl1-mesa-dev python3-setuptools libfreetype6-dev libpng-dev libjpeg-dev fonts-noto-cjk wget curl ca-certificates
+        sudo apt-get clean
 
     - name: 验证 Java 版本
       run: |
