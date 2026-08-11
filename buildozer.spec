@@ -1,39 +1,29 @@
 [app]
-#标题允许中文 title language is not limited
 title = 爱奇艺助手
 package.name = iqiyihelper
-
-#release模式不能用org.test 'org.test' can't be used in release mode
 package.domain = org.example
-#工作目录 working directory
 source.dir = .
-#需要打包的文件类型 file types to be packed
 source.include_exts = py,png,jpg,kv,atlas
 version = 0.1
-#依赖库
 requirements = python3,kivy==2.3.0,requests,certifi,urllib3,chardet,idna
 
-# --- Android 配置 ---
 android.permissions = INTERNET
-android.api = 34
+android.api = 33
 android.minapi = 21
 android.allow_api_min = 21
-android.ndk = 25c
-android.ndkVersion = 25c
+android.ndk = 25b
+android.ndkVersion = 25b
 android.ndk_api = 21
 android.archs = arm64-v8a
 android.accept_sdk_license = True
-android.skip_update = True
+android.sdk = 33
 
-# --- Gradle 配置 ---
 android.gradle_download = https:gradle-7.6.4-all.zip
 android.gradle_plugin = 7.4.2
 
-# --- p4a 配置 ---
 p4a.bootstrap = sdl2
 p4a.gradle_options = -Dorg.gradle.java.home=/usr/lib/jvm/temurin-17-jdk-amd64
 
-# 排除测试文件
 exclude_patterns = **/test/*, **/tests/*
 
 [buildozer]
