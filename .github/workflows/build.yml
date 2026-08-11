@@ -7,10 +7,18 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04  # 使用更稳定的 22.04 环境
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      # 1. 清理空间 (防止编译过程中因磁盘满而中断)
+      - name: Free Disk Space
+        run: |
+          sudo docker image prune -a -f
+          sudo rm -rf /usr/local/lib/android # 移除旧版SDK以释放约20GB
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -23,25 +31,15 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      # 2. 安装系统依赖 (精简版，移除冲突的库)
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
             git \
-            ffmpeg \
-            libsdl2-dev \
-            libsdl2-image-dev \
-            libsdl2-mixer-dev \
-            libsdl2-ttf-dev \
-            libportmidi-dev \
-            libswscale-dev \
-            libavformat-dev \
-            libavcodec-dev \
-            zlib1g-dev \
-            libgstreamer1.0-dev \
-            gstreamer1.0-plugins-base \
-            gstreamer1.0-plugins-good \
+            python3-dev \
+            libunwind-dev \
             libffi-dev \
             libssl-dev \
             autoconf \
@@ -49,6 +47,9 @@ jobs:
             libtool \
             pkg-config \
             cmake \
+            zlib1g-dev \
+            zip \
+            unzip \
             ant
 
       - name: Cache Buildozer
@@ -61,9 +62,10 @@ jobs:
         run: |
           pip install --upgrade buildozer cython==0.29.33 virtualenv
 
+      # 3. 编译阶段 (显式设置环境变量防止卡死)
       - name: Build APK with Buildozer
         run: |
-          # 增加编译时的超时容错和自动协议同意
+          # 自动接受所有许可协议
           yes | buildozer android debug
         env:
           BUILDOZER_WARN_ROOT_CONFIG: 1
