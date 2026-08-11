@@ -1,36 +1,39 @@
 [app]
+#标题允许中文 title language is not limited
 title = 爱奇艺助手
 package.name = iqiyihelper
-package.domain = org.example
 
+#release模式不能用org.test 'org.test' can't be used in release mode
+package.domain = org.example
+#工作目录 working directory
 source.dir = .
+#需要打包的文件类型 file types to be packed
 source.include_exts = py,png,jpg,kv,atlas
 version = 0.1
+#依赖库
 requirements = python3,kivy==2.3.0,requests,certifi,urllib3,chardet,idna
 
-# --- 核心修复配置 ---
-# 1. 使用模板中验证过的稳定版本组合
+# Android 配置
+android.permissions = INTERNET
 android.api = 33
 android.minapi = 21
+android.allow_api_min = 21
 android.ndk = 25b
 android.sdk = 33
 android.ndk_api = 21
-
-# 2. 指定 Gradle 版本，避免下载失败或版本不兼容
-android.gradle_download = https://services.gradle.org/distributions/gradle-7.6.4-all.zip
-android.gradle_plugin = 7.4.2
-
-# 3. 明确指定构建架构，使用新版的 archs 配置
 android.archs = arm64-v8a
-
-# 4. 自动接受 SDK 许可证
 android.accept_sdk_license = True
 
-# 5. 移除 p4a.branch 配置，使用 buildozer 自带的稳定版 p4a，避免版本冲突
-# p4a.branch = master  <-- 已移除
+# Gradle 配置
+android.gradle_download = https:gradle-7.6.4-all.zip
+android.gradle_plugin = 7.4.2
 
-# 权限
-android.permissions = INTERNET
+# p4a 配置
+p4a.bootstrap = sdl2
+p4a.gradle_options = -Dorg.gradle.java.home=/usr/lib/jvm/temurin-17-jdk-amd64
+
+# 排除测试文件
+exclude_patterns = **/test/*, **/tests/*
 
 [buildozer]
 log_level = 2
