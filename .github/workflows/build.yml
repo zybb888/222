@@ -30,26 +30,14 @@ jobs:
           libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
           libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev \
           libglew-dev x11proto-core-dev libx11-dev libxxf86vm-dev \
-          libgl1-mesa-dev python3-setuptools libboost-all-dev \
-          gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly \
-          gstreamer1.0-libav gstreamer1.0-doc gstreamer1.0-omx \
-          gstreamer1.0-omx-plugins libopenjp2-7-dev libwebp-dev \
-          libhdf5-serial-dev libatlas-base-dev liblapack-dev \
-          libeigen3-dev software-properties-common \
+          libgl1-mesa-dev python3-setuptools \
           libfreetype6-dev libpng-dev libjpeg-dev \
-          libopenal-dev libogg-dev libvorbis-dev libmpg123-dev \
-          libflac-dev libwavpack-dev libsndfile1-dev libtinyxml-dev \
-          libphysfs-dev libyaml-cpp-dev libudev-dev libdbus-1-3 \
-          libibus-1.0-5 libgl1-mesa-glx libegl1-mesa libgles2-mesa \
-          libdrm-dev libgbm-dev libinput-dev libwayland-dev \
-          libxkbcommon-dev libxi-dev libxrandr-dev \
-          libasound2-dev libcups2-dev \
-          fonts-liberation fonts-noto-cjk wget curl ca-certificates gnupg
+          fonts-noto-cjk wget curl ca-certificates
         sudo apt-get clean
 
     - name: 验证 Java 版本
       run: |
-        java -version || echo "Java 安装失败"
+        java -version
         echo "JAVA_HOME=$JAVA_HOME"
 
     - name: 安装 Buildozer 和 Cython
@@ -65,7 +53,7 @@ jobs:
         cat buildozer.spec
         head -20 main.py
 
-    - name: 构建 APK (Debug 版本)
+    - name: 构建 APK
       run: |
         buildozer android clean 2>/dev/null || true
         buildozer android debug
