@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -19,29 +19,42 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          sudo dpkg --add-architecture i386
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
             python3-pip python3-venv build-essential \
             libffi-dev libssl-dev autoconf automake libtool pkg-config \
             zlib1g-dev libncurses5-dev libncursesw5-dev \
             liblzma-dev libsqlite3-dev libbz2-dev \
             libreadline-dev libgdbm-dev tk-dev \
-            openjdk-17-jdk unzip zip git
+            openjdk-17-jdk unzip zip git \
+            libstdc++6:i386 libgcc-s1:i386 zlib1g:i386 \
+            libncurses5:i386 libbz2-1.0:i386 \
+            automake autoconf libltdl-dev
 
       - name: Install Buildozer and Cython
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install buildozer cython
 
-      - name: Build APK with Buildozer
+      - name: Build APK
         run: |
-          yes | buildozer android debug
-        timeout-minutes: 60
+          export BUILDOZER_WARN_ROOT_CONFIG=1
+          buildozer android debug 2>&1 | tee buildozer.log
+        timeout-minutes: 90
         env:
           BUILDOZER_WARN_ROOT_CONFIG: 1
 
       - name: Upload APK artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: iqiyi-claim-apk
           path: bin/*.apk
+
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: buildozer-log
+          path: buildozer.log
