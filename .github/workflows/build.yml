@@ -6,8 +6,6 @@ on:
   workflow_dispatch:
 
 env:
-  JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
-  ANDROID_JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
   CYTHON_LANGUAGE_LEVEL: "3"
   GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx2048m"
 
@@ -24,6 +22,12 @@ jobs:
       with:
         distribution: temurin
         java-version: 17
+
+    - name: Create Java symlink
+      run: |
+        echo "JAVA_HOME is: $JAVA_HOME"
+        sudo ln -sf "$JAVA_HOME" /usr/lib/jvm/temurin-17-jdk-amd64
+        ls -la /usr/lib/jvm/temurin-17-jdk-amd64
 
     - name: Set up Python
       uses: actions/setup-python@v5
