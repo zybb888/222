@@ -1,0 +1,9 @@
+*.pyc
+__pycache__/
+*.log
+.DS_Store
+bin/
+build/
+dist/
+*.apk
+*.aab
