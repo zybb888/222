@@ -18,14 +18,11 @@ android.permissions = INTERNET
 android.api = 34
 android.minapi = 21
 android.allow_api_min = 21
-# NDK 25c 与 p4a master 兼容，解决 NDK 版本冲突（之前 25b 不兼容）
 android.ndk = 25c
 android.ndkVersion = 25c
 android.ndk_api = 21
 android.archs = arm64-v8a
-# 自动接受 SDK 许可证
 android.accept_sdk_license = True
-# 跳过 buildozer 自动下载 SDK/NDK/p4a（已在 workflow 中预下载）
 android.skip_update = True
 
 # --- Gradle 配置 ---
