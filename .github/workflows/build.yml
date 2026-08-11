@@ -8,74 +8,56 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    env:
+      JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
+      ANDROID_JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
 
     steps:
-    - name: 检出代码
+    - name: Checkout
       uses: actions/checkout@v4
 
-    - name: 设置 Python 环境
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: 17
+
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
-    - name: 设置 Java 17 为默认
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-
-    - name: 安装系统依赖
+    - name: Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends git zip unzip python3-pip autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev libunwind-dev libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev libglew-dev x11proto-core-dev libx11-dev libxxf86vm-dev libgl1-mesa-dev python3-setuptools libfreetype6-dev libpng-dev libjpeg-dev fonts-noto-cjk wget curl ca-certificates
         sudo apt-get clean
 
-    - name: 强制设置 JAVA_HOME
-      run: |
-        export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
-        echo "JAVA_HOME=$JAVA_HOME" >> $GITHUB_ENV
-        java -version
-
-    - name: 安装 Buildozer 和 Cython
+    - name: Install Buildozer
       run: |
         python -m pip install --upgrade pip setuptools wheel
         pip install --upgrade cython==0.29.36
         pip install buildozer==1.5.0
         buildozer --version
 
-    - name: 验证项目文件
+    - name: Verify files
       run: |
         ls -la
         cat buildozer.spec
         head -20 main.py
 
-    - name: 手动接受 Android SDK 许可证
+    - name: Build APK
       run: |
-        mkdir -p $HOME/.android
-        echo "y" | sudo $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/bin/sdkmanager --licenses 2>/dev/null || true
-        # 也尝试用 buildozer 自带的 sdkmanager
-        find $HOME/.buildozer -name "sdkmanager" -type f 2>/dev/null | head -5
-        # 如果上面没找到，用 sdkmanager 接受所有许可证
-        if [ -d "$HOME/.buildozer/android/platform/android-sdk/cmdline-tools" ]; then
-          SDKMANAGER="$HOME/.buildozer/android/platform/android-sdk/cmdline-tools/bin/sdkmanager"
-          if [ -f "$SDKMANAGER" ]; then
-            echo y | "$SDKMANAGER" --licenses 2>&1 || true
-          fi
-        fi
-
-    - name: 构建 APK
-      run: |
-        export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
         buildozer android clean 2>/dev/null || true
         buildozer android debug
 
-    - name: 验证 APK 文件
+    - name: Verify APK
       if: always()
       run: |
-        find . -name "*.apk" -type f 2>/dev/null || echo "未找到 APK 文件"
-        ls -la bin/ 2>/dev/null || echo "bin 目录不存在"
+        find . -name "*.apk" -type f 2>/dev/null || echo "No APK found"
+        ls -la bin/ 2>/dev/null || echo "bin dir not found"
 
-    - name: 上传 APK 文件
+    - name: Upload APK
       if: success()
       uses: actions/upload-artifact@v4
       with:
