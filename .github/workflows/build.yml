@@ -11,12 +11,10 @@ permissions:
   checks: read
 
 env:
-  ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-  ANDROID_HOME: /usr/local/lib/android/sdk
-  JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
-  ANDROID_JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
+  ANDROID_SDK_ROOT: $HOME/.buildozer/android/platform/android-sdk
+  ANDROID_HOME: $HOME/.buildozer/android/platform/android-sdk
   CYTHON_LANGUAGE_LEVEL: "3"
-  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.java-home=$JAVA_HOME -Dorg.gradle.jvmargs=-Xmx2048m"
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx2048m"
 
 jobs:
   build:
@@ -38,6 +36,12 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
+
+    - name: Create Java symlink for Gradle
+      run: |
+        echo "JAVA_HOME=$JAVA_HOME"
+        sudo ln -sf "$JAVA_HOME" /usr/lib/jvm/temurin-17-jdk-amd64
+        ls -la /usr/lib/jvm/temurin-17-jdk-amd64
 
     - name: Install system dependencies
       run: |
@@ -64,7 +68,7 @@ jobs:
         "$BP/android-sdk/cmdline-tools/latest/bin/sdkmanager" --sdk_root "$BP/android-sdk" "platform-tools" "platforms;android-34"
 
         echo "=== 4. Downloading NDK r25c ==="
-        wget -q "https:android-ndk-r25c-linux.zip" -O ndk.zip
+        wget -q "https:android-ndk-r25c-linux-x86_64.zip" -O ndk.zip
         unzip -q ndk.zip -d "$BP/android-ndk"
 
         echo "=== 5. Creating NDK symlink ==="
@@ -93,6 +97,8 @@ jobs:
         buildozer --version
 
     - name: Build APK
+      env:
+        ANDROID_JAVA_HOME: $JAVA_HOME
       run: |
         buildozer android debug
 
