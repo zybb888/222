@@ -12,11 +12,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 1. 清理空间 (防止编译过程中因磁盘满而中断)
       - name: Free Disk Space
         run: |
           sudo docker image prune -a -f
-          sudo rm -rf /usr/local/lib/android # 移除旧版SDK以释放约20GB
+          sudo rm -rf /usr/local/lib/android
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /opt/ghc
 
@@ -31,7 +30,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # 2. 安装系统依赖 (精简版，移除冲突的库)
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -52,24 +50,19 @@ jobs:
             unzip \
             ant
 
-      - name: Cache Buildozer
-        uses: actions/cache@v4
-        with:
-          path: .buildozer
-          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
-
       - name: Install Buildozer and Cython
         run: |
-          pip install --upgrade buildozer cython==0.29.33 virtualenv
+          # 必须安装 Cython 3.0+ 以修复 Python 3.13+ 环境下 cgi 模块缺失导致的编译失败
+          pip install --upgrade buildozer "cython>=3.0.0" virtualenv setuptools
 
-      # 3. 编译阶段 (显式设置环境变量防止卡死)
       - name: Build APK with Buildozer
         run: |
-          # 自动接受所有许可协议
-          yes | buildozer android debug
+          buildozer android debug
         env:
           BUILDOZER_WARN_ROOT_CONFIG: 1
           BUILDOZER_ALLOW_ORG_APK_EXPORT: 1
+          # 核心修复：强制子编译环境使用 Cython 3.0.0
+          APP_CYTHON_VERSION: "3.0.0"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
