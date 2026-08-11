@@ -1,3 +1,4 @@
+
 # main.py
 import threading
 import time
@@ -11,7 +12,6 @@ from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 from kivy.uix.scrollview import ScrollView
 from kivy.clock import mainthread
-from kivy.core.window import Window
 
 # --- 配置常量 ---
 CLAIM_API_URL = "https://act.vip.iqiyi.com/cloud-party-v2/seat/receive"
@@ -21,33 +21,34 @@ CODE_NEED_CAPTCHA = "E00013"
 CODE_SOLD_OUT = "Q00303"
 CODE_ALREADY_GOT = "Q00301"
 
+
 class IqiyiClaimApp(App):
     def build(self):
         self.title = "爱奇艺云包场助手"
         self.running = False
         self.thread = None
-        
+
         # UI 布局
         self.layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
-        
+
         # 输入区域
         self.input_scroll = ScrollView(size_hint_y=None, height=300)
         self.input_box = BoxLayout(orientation='vertical', size_hint_y=None, height=300, spacing=5)
         self.input_scroll.add_widget(self.input_box)
-        
+
         self.cookie_input = self.add_input("Cookie (P00001...)", multiline=True, height=100)
         self.item_code_input = self.add_input("场次代码 (itemCode)", text="")
         self.activity_code_input = self.add_input("活动代码 (activityCode)", text="a687d61142dbd753")
         self.act_code_input = self.add_input("白名单代码 (actCode)", text="")
-        
+
         self.input_box.add_widget(self.cookie_input)
         self.input_box.add_widget(self.item_code_input)
         self.input_box.add_widget(self.activity_code_input)
         self.input_box.add_widget(self.act_code_input)
-        
+
         self.layout.add_widget(Label(text="参数设置:", size_hint_y=None, height=30, halign='left', text_size=(300, None)))
         self.layout.add_widget(self.input_scroll)
-        
+
         # 按钮区域
         self.btn_layout = BoxLayout(size_hint_y=None, height=50, spacing=10)
         self.start_btn = Button(text="立即开始", background_color=(0, 1, 0, 1), on_press=self.start_task)
@@ -55,17 +56,17 @@ class IqiyiClaimApp(App):
         self.btn_layout.add_widget(self.start_btn)
         self.btn_layout.add_widget(self.stop_btn)
         self.layout.add_widget(self.btn_layout)
-        
+
         # 日志区域
         self.log_label = Label(text="日志输出:", size_hint_y=None, height=30, halign='left', text_size=(300, None))
         self.layout.add_widget(self.log_label)
-        
+
         self.log_scroll = ScrollView()
         self.log_output = Label(text="", size_hint_y=None, valign='top', halign='left', markup=True)
         self.log_output.bind(texture_size=self.log_output.setter('size'))
         self.log_scroll.add_widget(self.log_output)
         self.layout.add_widget(self.log_scroll)
-        
+
         return self.layout
 
     def add_input(self, hint, text="", multiline=False, height=40):
@@ -74,27 +75,24 @@ class IqiyiClaimApp(App):
 
     def log(self, msg):
         print(msg)
-        # 使用 Kivy 的 mainthread 装饰器确保 UI 更新在主线程
         self.update_log(msg)
 
     @mainthread
     def update_log(self, msg):
         current = self.log_output.text
         self.log_output.text = f"{current}\n{msg}"
-        # 自动滚动到底部
         self.log_scroll.scroll_to(self.log_output)
 
     def start_task(self, instance):
         if not self.cookie_input.text.strip():
             self.log("[错误] 请输入 Cookie")
             return
-        
+
         self.running = True
         self.start_btn.disabled = True
         self.stop_btn.disabled = False
         self.log("[状态] 任务已启动...")
-        
-        # 启动后台线程
+
         self.thread = threading.Thread(target=self.run_logic, daemon=True)
         self.thread.start()
 
@@ -105,22 +103,20 @@ class IqiyiClaimApp(App):
         self.stop_btn.disabled = True
 
     def run_logic(self):
-        # --- 核心领取逻辑 ---
         cookie = self.cookie_input.text.strip()
         item_code = self.item_code_input.text.strip()
         activity_code = self.activity_code_input.text.strip()
         act_code = self.act_code_input.text.strip()
-        
-        # 解析 Cookie 获取关键参数
+
         def get_cookie_val(key):
             match = re.search(rf"{key}=([^;]+)", cookie)
             return match.group(1) if match else ""
-            
+
         p00001 = get_cookie_val("P00001")
         device_id = get_cookie_val("QC006")
         dfp = get_cookie_val("__dfp").split("@")[0]
         fv = get_cookie_val("QC142")
-        
+
         if not all([p00001, device_id, dfp, fv]):
             self.log("[错误] Cookie 解析失败，缺少关键参数 (QC006, __dfp, QC142)")
             self.running = False
@@ -142,7 +138,7 @@ class IqiyiClaimApp(App):
             "ptid": "03020031010000000000", "agentType": "11", "fv": fv, "source": fv, "cs": "1",
             "activityCode": activity_code, "_": str(int(time.time() * 1000))
         }
-        
+
         try:
             r = requests.get(ADD_WHITELIST_URL, headers=headers, params=signup_params, timeout=5)
             if r.status_code == 200 and r.json().get("code") == CODE_SUCCESS:
@@ -154,8 +150,8 @@ class IqiyiClaimApp(App):
 
         # 2. 循环领取
         start_time = time.time()
-        max_duration = 120 # 默认120秒
-        
+        max_duration = 120
+
         while self.running:
             if time.time() - start_time > max_duration:
                 self.log("[系统] 达到最大运行时间 (120s)，自动停止")
@@ -167,19 +163,20 @@ class IqiyiClaimApp(App):
                 "platform": "97ae29823569d8", "version": "1.0.0", "deviceId": device_id,
                 "qyid": device_id, "dfp": dfp, "lang": "zh_CN", "app_lm": "cn",
                 "ptid": "03020031010000000000", "agentType": "11", "fv": fv, "source": fv, "cs": "1",
-                "activityCode": activity_code, "de": "", "fr_version": f"v=&d={device_id}&sid={get_cookie_val('vipfe_device_session_id')}",
+                "activityCode": activity_code, "de": "",
+                "fr_version": f"v=&d={device_id}&sid={get_cookie_val('vipfe_device_session_id')}",
                 "itemCode": item_code, "_": str(int(time.time() * 1000)), "token": ""
             }
-            
+
             try:
                 r = requests.post(CLAIM_API_URL, headers=headers, data=data, timeout=5)
                 res = r.json()
                 code = res.get("code", "")
                 msg = res.get("msg", "")
-                
+
                 if code == CODE_SUCCESS:
                     self.log(f"[成功] 领取成功！Msg: {msg}")
-                    self.running = False # 成功后停止
+                    self.running = False
                 elif code == CODE_SOLD_OUT:
                     self.log(f"[结束] 已领光")
                     self.running = False
@@ -187,20 +184,19 @@ class IqiyiClaimApp(App):
                     self.log(f"[提示] 已领取过")
                     self.running = False
                 elif code == CODE_NEED_CAPTCHA:
-                    # 按照你的要求：不弹窗，直接记录日志并继续循环
                     self.log("[风控] 触发验证码 (E00013)，自动重试中...")
                 else:
                     self.log(f"[响应] {code}: {msg}")
-                    
+
             except Exception as e:
                 self.log(f"[错误] 请求异常: {e}")
-            
-            # 间隔 0.5 - 1 秒
-            time.sleep(0.5 + (0.5 * (hash(str(time.time())) % 100) / 100)) # 简单的随机延迟
-            
-        # 任务结束恢复按钮状态
+
+            # 间隔 0.5 - 1 秒随机延迟
+            time.sleep(0.5 + 0.5 * (hash(str(time.time())) % 100) / 100)
+
         self.start_btn.disabled = False
         self.stop_btn.disabled = True
+
 
 if __name__ == '__main__':
     IqiyiClaimApp().run()
